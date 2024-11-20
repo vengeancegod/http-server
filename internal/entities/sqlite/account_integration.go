@@ -35,8 +35,20 @@ func (ae *AccountIntegrationEntity) GetAllIntegrations() ([]entities.AccountInte
 	return accountIntegration, nil
 }
 
-func (ae *AccountIntegrationEntity) CreateIntegration(AccountId, SecretKey, ClientId, RedirectURL, AuthenticationCode, AuthorizationCode string) error {
+func (ae *AccountIntegrationEntity) CreateIntegration(AccountId int64, SecretKey, ClientId, RedirectURL, AuthenticationCode, AuthorizationCode string) error {
 	statement := `INSERT INTO account_integration (account_id, secret_key, client_id, redirect_url, authentication_code, authorization_code) VALUES (?, ?, ?, ?, ?, ?)`
 	_, err := ae.DB.Exec(statement, AccountId, SecretKey, ClientId, RedirectURL, AuthenticationCode, AuthorizationCode)
+	return err
+}
+
+func (ae *AccountIntegrationEntity) DeleteIntegration(Id int64) error {
+	statement := `DELETE FROM account_integration WHERE id = ?`
+	_, err := ae.DB.Exec(statement, Id)
+	return err
+}
+
+func (ae *AccountIntegrationEntity) UpdateIntegration(Id int64, AccountId int64, SecretKey, ClientId, RedirectURL, AuthenticationCode, AuthorizationCode string) error {
+	statement := `UPDATE account_integration SET account_id = ?, secret_key = ?, client_id = ?, redirect_url = ?, authentication_code = ?, authorization_code = ? WHERE id = ?`
+	_, err := ae.DB.Exec(statement, AccountId, SecretKey, ClientId, RedirectURL, AuthenticationCode, AuthorizationCode, Id)
 	return err
 }

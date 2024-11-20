@@ -40,3 +40,15 @@ func (ae *AccountEntity) CreateAccount(AccessToken, RefreshToken string, Expires
 	_, err := ae.DB.Exec(statement, AccessToken, RefreshToken, Expires)
 	return err
 }
+
+func (ae *AccountEntity) DeleteAccount(Id int64) error {
+	statement := `DELETE FROM account WHERE id = ?`
+	_, err := ae.DB.Exec(statement, Id)
+	return err
+}
+
+func (ae *AccountEntity) UpdateAccount(Id int64, AccessToken, RefreshToken string, Expires int64) error {
+	statement := `UPDATE account SET access_token = ?, refresh_token = ?, expires = ? WHERE id = ?`
+	_, err := ae.DB.Exec(statement, AccessToken, RefreshToken, Expires, Id)
+	return err
+}
