@@ -1,4 +1,4 @@
-package entities
+package model
 
 type AccountIntegration struct {
 	ID                 int64  `json:"id"`

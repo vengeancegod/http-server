@@ -2,203 +2,231 @@ package handlers
 
 import (
 	"encoding/json"
-	"http-server/internal/entities"
-	"http-server/internal/entities/sqlite"
-	"log"
+	"http-server-fixed/internal/entities"
+	"http-server-fixed/internal/service"
 	"net/http"
 	"strconv"
 )
 
 type App struct {
-	Accounts     *sqlite.AccountEntity
-	Integrations *sqlite.AccountIntegrationEntity
+	accountService     service.AccountService
+	integrationService service.AccountIntegrationService
 }
 
-func (app *App) handleAccounts(w http.ResponseWriter, r *http.Request) {
-	accounts, err := app.Accounts.GetAll()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-
-	if err := json.NewEncoder(w).Encode(accounts); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+func NewApp(accountService service.AccountService, integrationService service.AccountIntegrationService) *App {
+	return &App{accountService: accountService, integrationService: integrationService}
 }
 
-func (app *App) handleIntegrations(w http.ResponseWriter, r *http.Request) {
-	integrations, err := app.Integrations.GetAllIntegrations()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	log.Println("Integrations:", integrations)
-	w.Header().Set("Content-Type", "application/json")
-
-	if err := json.NewEncoder(w).Encode(integrations); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
+var lastAccountID int64
+var lastIntegrationID int64
 
 func (app *App) handleCreateAccount(w http.ResponseWriter, r *http.Request) {
 	var account entities.Account
-	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(&account)
-	if err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+	if err := json.NewDecoder(r.Body).Decode(&account); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	err = app.Accounts.CreateAccount(account.AccessToken, account.RefreshToken, account.Expires)
+	lastAccountID++
+	account.ID = lastAccountID
+
+	err := app.accountService.CreateAccount(account)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusCreated)
+
+	response := entities.Response{
+		Status:  "success",
+		Message: entities.AccountCreate,
+	}
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(map[string]string{"status": "Account created successfully"}); err != nil {
+	if err := json.NewEncoder(w).Encode(response); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
-func (app *App) handleCreateIntegration(w http.ResponseWriter, r *http.Request) {
-	var integration entities.AccountIntegration
-	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(&integration)
+func (app *App) handleAccounts(w http.ResponseWriter, _ *http.Request) {
+
+	account, err := app.accountService.GetAllAccounts()
 	if err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
-	err = app.Integrations.CreateIntegration(integration.AccountId, integration.SecretKey, integration.ClientId, integration.RedirectURL, integration.AuthenticationCode, integration.AuthorizationCode)
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(account); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (app *App) handleUpdateAccount(w http.ResponseWriter, r *http.Request) {
+
+	id := r.URL.Query().Get("id")
+	accountID, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		http.Error(w, entities.ErrIncorrectType, http.StatusBadRequest)
+		return
+	}
+
+	var account entities.Account
+	if err := json.NewDecoder(r.Body).Decode(&account); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	account.ID = accountID
+
+	err = app.accountService.UpdateAccount(accountID, account)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
+
+	response := entities.Response{
+		Status:  "success",
+		Message: entities.AccountUpdate,
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(map[string]string{"status": "Integration created successfully"}); err != nil {
+	if err := json.NewEncoder(w).Encode(response); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func (app *App) handleDeleteAccount(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
-	if id == "" {
-		http.Error(w, "Enter id", http.StatusBadRequest)
+
+	accountID, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	accountId, err := strconv.ParseInt(id, 10, 64)
+
+	err = app.accountService.DeleteAccount(accountID)
 	if err != nil {
-		http.Error(w, "Incorecct type", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	err = app.Accounts.DeleteAccount(accountId)
+
+	w.WriteHeader(http.StatusOK)
+
+	response := entities.Response{
+		Status:  "success",
+		Message: entities.AccountDelete,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (app *App) handleCreateIntegration(w http.ResponseWriter, r *http.Request) {
+	var integration entities.AccountIntegration
+
+	if err := json.NewDecoder(r.Body).Decode(&integration); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	lastIntegrationID++
+	integration.ID = lastIntegrationID
+
+	err := app.integrationService.CreateIntegration(integration)
 	if err != nil {
-		http.Error(w, "Failed to delete account", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+
+	response := entities.Response{
+		Status:  "success",
+		Message: entities.IntegrationCreate,
+	}
+
+	w.Header().Set("Content-Type", "applications/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (app *App) handleIntegrations(w http.ResponseWriter, _ *http.Request) {
+
+	accountIntegration, err := app.integrationService.GetAllIntegrations()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(map[string]string{"status": "Account deleted successfully"}); err != nil {
+	if err := json.NewEncoder(w).Encode(accountIntegration); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (app *App) handleUpdateIntegration(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Query().Get("id")
+	integrationID, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		http.Error(w, entities.ErrIncorrectType, http.StatusBadRequest)
+	}
+
+	var integration entities.AccountIntegration
+	if err := json.NewDecoder(r.Body).Decode(&integration); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
+
+	integration.ID = integrationID
+
+	err = app.integrationService.UpdateIntegration(integrationID, integration)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	w.WriteHeader(http.StatusOK)
+
+	response := entities.Response{
+		Status:  "success",
+		Message: entities.IntegrationUpdate,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func (app *App) handleDeleteIntegration(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
-	if id == "" {
-		http.Error(w, "Enter id", http.StatusBadRequest)
-		return
-	}
-	integrationId, err := strconv.ParseInt(id, 10, 64)
+
+	integrationID, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
-		http.Error(w, "Incorrect type", http.StatusBadRequest)
-		return
-	}
-	err = app.Integrations.DeleteIntegration(integrationId)
-	if err != nil {
-		http.Error(w, "Failed to delete account", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(map[string]string{"status": "Integration deleted successfully"}); err != nil {
+	err = app.integrationService.DeleteIntegration(integrationID)
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-
-func (app *App) handleUpdateAccount(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Query().Get("id")
-	if id == "" {
-		http.Error(w, "Enter id", http.StatusBadRequest)
 		return
 	}
 
-	accountId, err := strconv.ParseInt(id, 10, 64)
-	if err != nil {
-		http.Error(w, "Incorrect type of ID", http.StatusBadRequest)
-		return
-	}
-
-	var acc *entities.Account
-
-	if err := json.NewDecoder(r.Body).Decode(&acc); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	err = app.Accounts.UpdateAccount(accountId, acc.AccessToken, acc.RefreshToken, acc.Expires)
-	if err != nil {
-		http.Error(w, "Failed to update account", http.StatusInternalServerError)
-		return
+	response := entities.Response{
+		Status:  "success",
+		Message: entities.IntegrationDelete,
 	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
-
-	if err := json.NewEncoder(w).Encode(map[string]string{"status": "Account updated successfully"}); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-
-func (app *App) handleUpdateIntegration(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Query().Get(("id"))
-	if id == "" {
-		http.Error(w, "Enter id", http.StatusBadRequest)
-		return
-	}
-
-	integrationId, err := strconv.ParseInt(id, 10, 64)
-	if err != nil {
-		http.Error(w, "Incorrect type of ID", http.StatusBadRequest)
-		return
-	}
-
-	var ai *entities.AccountIntegration
-
-	if err := json.NewDecoder(r.Body).Decode(&ai); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	err = app.Integrations.UpdateIntegration(integrationId, ai.AccountId, ai.SecretKey, ai.ClientId, ai.RedirectURL, ai.AuthenticationCode, ai.AuthorizationCode)
-	if err != nil {
-		http.Error(w, "Failed to update account", http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
-
-	if err := json.NewEncoder(w).Encode(map[string]string{"status": "Integration updated successfully"}); err != nil {
+	if err := json.NewEncoder(w).Encode(response); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
