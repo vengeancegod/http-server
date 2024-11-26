@@ -2,9 +2,9 @@ package integration
 
 import (
 	"errors"
-	"http-server-fixed/internal/entities"
-	rep "http-server-fixed/internal/repository"
-	repoModel "http-server-fixed/internal/repository/integration/model"
+	"http-server/internal/entities"
+	rep "http-server/internal/repository"
+	repoModel "http-server/internal/repository/integration/model"
 	"strconv"
 	"sync"
 )

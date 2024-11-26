@@ -1,11 +1,11 @@
 package main
 
 import (
-	"http-server-fixed/internal/handlers"
-	"http-server-fixed/internal/repository/account"
-	"http-server-fixed/internal/repository/integration"
-	aService "http-server-fixed/internal/service/account"
-	iService "http-server-fixed/internal/service/integration"
+	"http-server/internal/handlers"
+	"http-server/internal/repository/account"
+	"http-server/internal/repository/integration"
+	aService "http-server/internal/service/account"
+	iService "http-server/internal/service/integration"
 	"log"
 	"net/http"
 )

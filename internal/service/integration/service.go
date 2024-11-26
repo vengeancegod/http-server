@@ -1,7 +1,7 @@
 package integration
 
 import (
-	"http-server-fixed/internal/repository"
+	"http-server/internal/repository"
 )
 
 type Service struct {

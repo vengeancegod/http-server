@@ -2,9 +2,9 @@ package account
 
 import (
 	"errors"
-	"http-server-fixed/internal/entities"
-	rep "http-server-fixed/internal/repository"
-	repoModel "http-server-fixed/internal/repository/account/model"
+	"http-server/internal/entities"
+	rep "http-server/internal/repository"
+	repoModel "http-server/internal/repository/account/model"
 	"strconv"
 	"sync"
 )

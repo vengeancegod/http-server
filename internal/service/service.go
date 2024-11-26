@@ -1,6 +1,6 @@
 package service
 
-import "http-server-fixed/internal/entities"
+import "http-server/internal/entities"
 
 type AccountService interface {
 	CreateAccount(account entities.Account) error

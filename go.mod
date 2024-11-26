@@ -1,3 +1,3 @@
-module http-server-fixed
+module http-server
 
 go 1.23.1

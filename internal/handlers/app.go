@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"encoding/json"
-	"http-server-fixed/internal/entities"
-	"http-server-fixed/internal/service"
+	"http-server/internal/entities"
+	"http-server/internal/service"
 	"net/http"
 	"strconv"
 )

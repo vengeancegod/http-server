@@ -1,6 +1,6 @@
 package repository
 
-import "http-server-fixed/internal/entities"
+import "http-server/internal/entities"
 
 type AccountRepository interface {
 	CreateAccount(account entities.Account) error

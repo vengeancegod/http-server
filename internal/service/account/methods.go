@@ -2,7 +2,7 @@ package account
 
 import (
 	"errors"
-	"http-server-fixed/internal/entities"
+	"http-server/internal/entities"
 )
 
 func (s *Service) CreateAccount(account entities.Account) error {

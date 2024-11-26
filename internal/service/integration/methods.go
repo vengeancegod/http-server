@@ -2,7 +2,7 @@ package integration
 
 import (
 	"errors"
-	"http-server-fixed/internal/entities"
+	"http-server/internal/entities"
 )
 
 func (s *Service) CreateIntegration(integration entities.AccountIntegration) error {
