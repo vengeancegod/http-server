@@ -1,9 +1,0 @@
-
-linters:
-  enable:
-    - revive
-    - errcheck
-    - gocyclo
-    - gofmt
-    - staticcheck
-
