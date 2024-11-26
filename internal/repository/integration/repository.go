@@ -47,7 +47,7 @@ func (repo *repository) CreateIntegration(integration entities.AccountIntegratio
 
 func (repo *repository) GetAllIntegrations() ([]entities.AccountIntegration, error) {
 	repo.mu.RLock()
-	repo.mu.RUnlock()
+	defer repo.mu.RUnlock()
 
 	if len(repo.data) == 0 {
 		return nil, errors.New(entities.ErrNotFoundInt)
