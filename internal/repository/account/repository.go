@@ -12,14 +12,52 @@ import (
 var _ rep.AccountRepository = (*repository)(nil)
 
 type repository struct {
-	data map[string]*repoModel.Account
-	mu   sync.RWMutex
+	data     map[string]*repoModel.Account
+	contacts map[string]*repoModel.Contacts
+	mu       sync.RWMutex
 }
 
 func NewRepository() *repository {
 	return &repository{
-		data: make(map[string]*repoModel.Account),
+		data:     make(map[string]*repoModel.Account),
+		contacts: make(map[string]*repoModel.Contacts),
 	}
+}
+
+func (repo *repository) GetAllContacts() ([]entities.Contacts, error) {
+	repo.mu.RLock()
+	defer repo.mu.RUnlock()
+
+	if len(repo.contacts) == 0 {
+		return nil, errors.New(entities.ErrNotFoundContacts)
+	}
+
+	var contacts []entities.Contacts
+
+	for _, contact := range repo.contacts {
+		contacts = append(contacts, entities.Contacts(*contact))
+	}
+
+	return contacts, nil
+}
+
+func (repo *repository) Authorization(request entities.AuthRequest) (entities.AuthResponse, error) {
+	repo.mu.RLock()
+	defer repo.mu.RUnlock()
+
+	account, exists := repo.data[request.Code]
+	if !exists {
+		return entities.AuthResponse{}, errors.New(entities.ErrNotFoundAcc)
+	}
+
+	authResponse := entities.AuthResponse{
+		TokenType:    "Bearer",
+		ExpiresIn:    int(account.Expires),
+		AccessToken:  account.AccessToken,
+		RefreshToken: account.RefreshToken,
+	}
+
+	return authResponse, nil
 }
 
 func (repo *repository) CreateAccount(account entities.Account) error {
@@ -67,7 +105,6 @@ func (repo *repository) UpdateAccount(id int64, account entities.Account) error 
 		return errors.New(entities.ErrUpdateAcc)
 	}
 
-	// account.Id = id
 	repo.data[accountID] = &repoModel.Account{
 		ID:           account.ID,
 		AccessToken:  account.AccessToken,

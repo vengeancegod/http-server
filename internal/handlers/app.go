@@ -20,6 +20,43 @@ func NewApp(accountService service.AccountService, integrationService service.Ac
 var lastAccountID int64
 var lastIntegrationID int64
 
+func (app *App) handleGetContacts(w http.ResponseWriter, _ *http.Request) {
+	contacts, err := app.accountService.GetAllContacts()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	w.Header().Set("Contect-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(contacts); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (app *App) handleAuthorization(w http.ResponseWriter, r *http.Request) {
+	var authRequest entities.AuthRequest
+	if err := json.NewDecoder(r.Body).Decode(&authRequest); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	authResponse, err := app.accountService.Authorization(authRequest)
+	if err != nil {
+		http.Error(w, "Authorization failed", http.StatusUnauthorized)
+		return
+	}
+
+	if err := app.accountService.CreateAccount(authResponse); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(authResponse); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+	}
+}
+
 func (app *App) handleCreateAccount(w http.ResponseWriter, r *http.Request) {
 	var account entities.Account
 	if err := json.NewDecoder(r.Body).Decode(&account); err != nil {
@@ -241,5 +278,7 @@ func (app *App) Routes() http.Handler {
 	mux.HandleFunc("/deleteIntegration", app.handleDeleteIntegration)
 	mux.HandleFunc("/updateAccount", app.handleUpdateAccount)
 	mux.HandleFunc("/updateIntegration", app.handleUpdateIntegration)
+	mux.HandleFunc("/auth", app.handleAuthorization)
+	mux.HandleFunc("/getContacts", app.handleGetContacts)
 	return mux
 }
