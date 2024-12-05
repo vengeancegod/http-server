@@ -1,129 +1,140 @@
 package account
 
 import (
+	"database/sql"
 	"errors"
 	"http-server/internal/entities"
+	"http-server/internal/infrastructure/database"
 	rep "http-server/internal/repository"
-	repoModel "http-server/internal/repository/account/model"
-	"strconv"
-	"sync"
 )
 
 var _ rep.AccountRepository = (*repository)(nil)
 
 type repository struct {
-	data     map[string]*repoModel.Account
-	contacts map[string]*repoModel.Contacts
-	mu       sync.RWMutex
+	db *sql.DB
 }
 
-func NewRepository() *repository {
-	return &repository{
-		data:     make(map[string]*repoModel.Account),
-		contacts: make(map[string]*repoModel.Contacts),
+func NewRepository() (*repository, error) {
+	db, err := database.InitDB()
+	if err != nil {
+		return nil, err
 	}
+	return &repository{
+		db: db,
+	}, nil
 }
 
 func (repo *repository) GetAllContacts() ([]entities.Contacts, error) {
-	repo.mu.RLock()
-	defer repo.mu.RUnlock()
-
-	if len(repo.contacts) == 0 {
-		return nil, errors.New(entities.ErrNotFoundContacts)
+	query := "SELECT name, email FROM contacts"
+	rows, err := repo.db.Query(query)
+	if err != nil {
+		return nil, err
 	}
+	defer rows.Close()
 
 	var contacts []entities.Contacts
+	for rows.Next() {
+		var contact entities.Contacts
+		if err := rows.Scan(&contact.Name, &contact.Email); err != nil {
+			return nil, err
+		}
+		contacts = append(contacts, contact)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
-	for _, contact := range repo.contacts {
-		contacts = append(contacts, entities.Contacts(*contact))
+	if len(contacts) == 0 {
+		return nil, errors.New(entities.ErrNotFoundContacts)
 	}
 
 	return contacts, nil
 }
-
 func (repo *repository) Authorization(request entities.AuthRequest) (entities.AuthResponse, error) {
-	repo.mu.RLock()
-	defer repo.mu.RUnlock()
 
-	account, exists := repo.data[request.Code]
-	if !exists {
-		return entities.AuthResponse{}, errors.New(entities.ErrNotFoundAcc)
+	query := "SELECT access_token, refresh_token, expires FROM accounts WHERE code = ?"
+	row := repo.db.QueryRow(query, request.Code)
+
+	var accessToken, refreshToken string
+	var expires int64
+
+	if err := row.Scan(&accessToken, &refreshToken, &expires); err != nil {
+		if err == sql.ErrNoRows {
+			return entities.AuthResponse{}, errors.New(entities.ErrNotFoundAcc)
+		}
+		return entities.AuthResponse{}, err
 	}
 
-	authResponse := entities.AuthResponse{
-		TokenType:    "Bearer",
-		ExpiresIn:    int(account.Expires),
-		AccessToken:  account.AccessToken,
-		RefreshToken: account.RefreshToken,
-	}
-
-	return authResponse, nil
+	return entities.AuthResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		ExpiresIn:    int(expires),
+	}, nil
 }
 
 func (repo *repository) CreateAccount(account entities.Account) error {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
 
-	accountID := strconv.FormatInt(account.ID, 10)
-	if _, exists := repo.data[accountID]; exists {
-		return nil
-	}
-
-	repo.data[accountID] = &repoModel.Account{
-		ID:           account.ID,
-		AccessToken:  account.AccessToken,
-		RefreshToken: account.RefreshToken,
-		Expires:      account.Expires,
-	}
-
-	return nil
+	query := "INSERT INTO accounts (access_token, refresh_token, expires) VALUES (?, ?, ?)"
+	_, err := repo.db.Exec(query, account.AccessToken, account.RefreshToken, account.Expires)
+	return err
 }
 
 func (repo *repository) GetAllAccounts() ([]entities.Account, error) {
-	repo.mu.RLock()
-	defer repo.mu.RUnlock()
-
-	if len(repo.data) == 0 {
-		return nil, errors.New(entities.ErrNotFoundAcc)
+	query := "SELECT * FROM accounts"
+	rows, err := repo.db.Query(query)
+	if err != nil {
+		return nil, err
 	}
+	defer rows.Close()
 
 	var accounts []entities.Account
+	for rows.Next() {
+		var account entities.Account
+		if err := rows.Scan(&account.ID, &account.AccessToken, &account.RefreshToken, &account.Expires); err != nil {
+			return nil, err
+		}
+		accounts = append(accounts, account)
+	}
 
-	for _, account := range repo.data {
-		accounts = append(accounts, entities.Account(*account))
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	if len(accounts) == 0 {
+		return nil, errors.New(entities.ErrNotFoundAcc)
 	}
 
 	return accounts, nil
 }
 
-func (repo *repository) UpdateAccount(id int64, account entities.Account) error {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
+// func (repo *repository) UpdateAccount(id int64, account entities.Account) error {
+// 	repo.mu.Lock()
+// 	defer repo.mu.Unlock()
 
-	accountID := strconv.FormatInt(account.ID, 10)
-	if _, exists := repo.data[accountID]; !exists {
-		return errors.New(entities.ErrUpdateAcc)
-	}
+// 	accountID := strconv.FormatInt(account.ID, 10)
+// 	if _, exists := repo.data[accountID]; !exists {
+// 		return errors.New(entities.ErrUpdateAcc)
+// 	}
 
-	repo.data[accountID] = &repoModel.Account{
-		ID:           account.ID,
-		AccessToken:  account.AccessToken,
-		RefreshToken: account.RefreshToken,
-		Expires:      account.Expires,
-	}
-	return nil
-}
+// 	repo.data[accountID] = &repoModel.Account{
+// 		ID:           account.ID,
+// 		AccessToken:  account.AccessToken,
+// 		RefreshToken: account.RefreshToken,
+// 		Expires:      account.Expires,
+// 	}
+// 	return nil
+// }
 
-func (repo *repository) DeleteAccount(id int64) error {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
+// func (repo *repository) DeleteAccount(id int64) error {
+// 	repo.mu.Lock()
+// 	defer repo.mu.Unlock()
 
-	accountID := strconv.FormatInt(id, 10)
-	if _, exists := repo.data[accountID]; !exists {
-		return errors.New(entities.ErrFailedDelete)
-	}
+// 	accountID := strconv.FormatInt(id, 10)
+// 	if _, exists := repo.data[accountID]; !exists {
+// 		return errors.New(entities.ErrFailedDelete)
+// 	}
 
-	delete(repo.data, accountID)
-	return nil
+// 	delete(repo.data, accountID)
+// 	return nil
 
-}
+// }

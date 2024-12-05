@@ -26,7 +26,7 @@ func (app *App) handleGetContacts(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
-	w.Header().Set("Contect-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(contacts); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -41,7 +41,7 @@ func (app *App) handleAuthorization(w http.ResponseWriter, r *http.Request) {
 
 	authResponse, err := app.accountService.Authorization(authRequest)
 	if err != nil {
-		http.Error(w, "Authorization failed", http.StatusUnauthorized)
+		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 
@@ -100,69 +100,69 @@ func (app *App) handleAccounts(w http.ResponseWriter, _ *http.Request) {
 	}
 }
 
-func (app *App) handleUpdateAccount(w http.ResponseWriter, r *http.Request) {
+// func (app *App) handleUpdateAccount(w http.ResponseWriter, r *http.Request) {
 
-	id := r.URL.Query().Get("id")
-	accountID, err := strconv.ParseInt(id, 10, 64)
-	if err != nil {
-		http.Error(w, entities.ErrIncorrectType, http.StatusBadRequest)
-		return
-	}
+// 	id := r.URL.Query().Get("id")
+// 	accountID, err := strconv.ParseInt(id, 10, 64)
+// 	if err != nil {
+// 		http.Error(w, entities.ErrIncorrectType, http.StatusBadRequest)
+// 		return
+// 	}
 
-	var account entities.Account
-	if err := json.NewDecoder(r.Body).Decode(&account); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+// 	var account entities.Account
+// 	if err := json.NewDecoder(r.Body).Decode(&account); err != nil {
+// 		http.Error(w, err.Error(), http.StatusBadRequest)
+// 		return
+// 	}
 
-	account.ID = accountID
+// 	account.ID = accountID
 
-	err = app.accountService.UpdateAccount(accountID, account)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+// 	err = app.accountService.UpdateAccount(accountID, account)
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusInternalServerError)
+// 		return
+// 	}
 
-	w.WriteHeader(http.StatusOK)
+// 	w.WriteHeader(http.StatusOK)
 
-	response := entities.Response{
-		Status:  "success",
-		Message: entities.AccountUpdate,
-	}
+// 	response := entities.Response{
+// 		Status:  "success",
+// 		Message: entities.AccountUpdate,
+// 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
+// 	w.Header().Set("Content-Type", "application/json")
+// 	if err := json.NewEncoder(w).Encode(response); err != nil {
+// 		http.Error(w, err.Error(), http.StatusInternalServerError)
+// 	}
+// }
 
-func (app *App) handleDeleteAccount(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Query().Get("id")
+// func (app *App) handleDeleteAccount(w http.ResponseWriter, r *http.Request) {
+// 	id := r.URL.Query().Get("id")
 
-	accountID, err := strconv.ParseInt(id, 10, 64)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+// 	accountID, err := strconv.ParseInt(id, 10, 64)
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusBadRequest)
+// 		return
+// 	}
 
-	err = app.accountService.DeleteAccount(accountID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+// 	err = app.accountService.DeleteAccount(accountID)
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusInternalServerError)
+// 		return
+// 	}
 
-	w.WriteHeader(http.StatusOK)
+// 	w.WriteHeader(http.StatusOK)
 
-	response := entities.Response{
-		Status:  "success",
-		Message: entities.AccountDelete,
-	}
+// 	response := entities.Response{
+// 		Status:  "success",
+// 		Message: entities.AccountDelete,
+// 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
+// 	w.Header().Set("Content-Type", "application/json")
+// 	if err := json.NewEncoder(w).Encode(response); err != nil {
+// 		http.Error(w, err.Error(), http.StatusInternalServerError)
+// 	}
+// }
 
 func (app *App) handleCreateIntegration(w http.ResponseWriter, r *http.Request) {
 	var integration entities.AccountIntegration
@@ -172,8 +172,8 @@ func (app *App) handleCreateIntegration(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	lastIntegrationID++
-	integration.ID = lastIntegrationID
+	// lastIntegrationID++
+	// integration.ID = lastIntegrationID
 
 	err := app.integrationService.CreateIntegration(integration)
 	if err != nil {
@@ -188,7 +188,7 @@ func (app *App) handleCreateIntegration(w http.ResponseWriter, r *http.Request) 
 		Message: entities.IntegrationCreate,
 	}
 
-	w.Header().Set("Content-Type", "applications/json")
+	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -274,9 +274,9 @@ func (app *App) Routes() http.Handler {
 	mux.HandleFunc("/integrations", app.handleIntegrations)
 	mux.HandleFunc("/createAccount", app.handleCreateAccount)
 	mux.HandleFunc("/createIntegration", app.handleCreateIntegration)
-	mux.HandleFunc("/deleteAccount", app.handleDeleteAccount)
+	// mux.HandleFunc("/deleteAccount", app.handleDeleteAccount)
 	mux.HandleFunc("/deleteIntegration", app.handleDeleteIntegration)
-	mux.HandleFunc("/updateAccount", app.handleUpdateAccount)
+	// mux.HandleFunc("/updateAccount", app.handleUpdateAccount)
 	mux.HandleFunc("/updateIntegration", app.handleUpdateIntegration)
 	mux.HandleFunc("/auth", app.handleAuthorization)
 	mux.HandleFunc("/getContacts", app.handleGetContacts)

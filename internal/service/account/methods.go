@@ -116,6 +116,7 @@ func (s *Service) Authorization(request entities.AuthRequest) (entities.Account,
 	}
 
 	if err := s.accountRepository.CreateAccount(account); err != nil {
+		log.Printf("Error creating account: %v", err)
 		return entities.Account{}, errors.New(entities.ErrCreateAcc)
 	}
 
@@ -138,22 +139,22 @@ func (s *Service) GetAllAccounts() ([]entities.Account, error) {
 	return account, nil
 }
 
-func (s *Service) UpdateAccount(id int64, account entities.Account) error {
-	err := s.accountRepository.UpdateAccount(id, account)
+// func (s *Service) UpdateAccount(id int64, account entities.Account) error {
+// 	err := s.accountRepository.UpdateAccount(id, account)
 
-	if err != nil {
-		return errors.New(entities.ErrUpdateAcc)
-	}
+// 	if err != nil {
+// 		return errors.New(entities.ErrUpdateAcc)
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
-func (s *Service) DeleteAccount(id int64) error {
-	err := s.accountRepository.DeleteAccount(id)
+// func (s *Service) DeleteAccount(id int64) error {
+// 	err := s.accountRepository.DeleteAccount(id)
 
-	if err != nil {
-		return errors.New(entities.ErrFailedDelete)
-	}
+// 	if err != nil {
+// 		return errors.New(entities.ErrFailedDelete)
+// 	}
 
-	return nil
-}
+// 	return nil
+// }

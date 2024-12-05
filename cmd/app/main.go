@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"http-server/internal/handlers"
 	"http-server/internal/repository/account"
 	"http-server/internal/repository/integration"
@@ -11,7 +12,10 @@ import (
 )
 
 func main() {
-	accountRepo := account.NewRepository()
+	accountRepo, err := account.NewRepository()
+	if err != nil {
+		errors.New("Error create repository")
+	}
 	integrationRepo := integration.NewRepository()
 	accountService := aService.NewService(accountRepo)
 	integrationService := iService.NewService(integrationRepo)
