@@ -106,35 +106,3 @@ func (repo *repository) GetAllAccounts() ([]entities.Account, error) {
 
 	return accounts, nil
 }
-
-// func (repo *repository) UpdateAccount(id int64, account entities.Account) error {
-// 	repo.mu.Lock()
-// 	defer repo.mu.Unlock()
-
-// 	accountID := strconv.FormatInt(account.ID, 10)
-// 	if _, exists := repo.data[accountID]; !exists {
-// 		return errors.New(entities.ErrUpdateAcc)
-// 	}
-
-// 	repo.data[accountID] = &repoModel.Account{
-// 		ID:           account.ID,
-// 		AccessToken:  account.AccessToken,
-// 		RefreshToken: account.RefreshToken,
-// 		Expires:      account.Expires,
-// 	}
-// 	return nil
-// }
-
-// func (repo *repository) DeleteAccount(id int64) error {
-// 	repo.mu.Lock()
-// 	defer repo.mu.Unlock()
-
-// 	accountID := strconv.FormatInt(id, 10)
-// 	if _, exists := repo.data[accountID]; !exists {
-// 		return errors.New(entities.ErrFailedDelete)
-// 	}
-
-// 	delete(repo.data, accountID)
-// 	return nil
-
-// }

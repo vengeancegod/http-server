@@ -100,70 +100,6 @@ func (app *App) handleAccounts(w http.ResponseWriter, _ *http.Request) {
 	}
 }
 
-// func (app *App) handleUpdateAccount(w http.ResponseWriter, r *http.Request) {
-
-// 	id := r.URL.Query().Get("id")
-// 	accountID, err := strconv.ParseInt(id, 10, 64)
-// 	if err != nil {
-// 		http.Error(w, entities.ErrIncorrectType, http.StatusBadRequest)
-// 		return
-// 	}
-
-// 	var account entities.Account
-// 	if err := json.NewDecoder(r.Body).Decode(&account); err != nil {
-// 		http.Error(w, err.Error(), http.StatusBadRequest)
-// 		return
-// 	}
-
-// 	account.ID = accountID
-
-// 	err = app.accountService.UpdateAccount(accountID, account)
-// 	if err != nil {
-// 		http.Error(w, err.Error(), http.StatusInternalServerError)
-// 		return
-// 	}
-
-// 	w.WriteHeader(http.StatusOK)
-
-// 	response := entities.Response{
-// 		Status:  "success",
-// 		Message: entities.AccountUpdate,
-// 	}
-
-// 	w.Header().Set("Content-Type", "application/json")
-// 	if err := json.NewEncoder(w).Encode(response); err != nil {
-// 		http.Error(w, err.Error(), http.StatusInternalServerError)
-// 	}
-// }
-
-// func (app *App) handleDeleteAccount(w http.ResponseWriter, r *http.Request) {
-// 	id := r.URL.Query().Get("id")
-
-// 	accountID, err := strconv.ParseInt(id, 10, 64)
-// 	if err != nil {
-// 		http.Error(w, err.Error(), http.StatusBadRequest)
-// 		return
-// 	}
-
-// 	err = app.accountService.DeleteAccount(accountID)
-// 	if err != nil {
-// 		http.Error(w, err.Error(), http.StatusInternalServerError)
-// 		return
-// 	}
-
-// 	w.WriteHeader(http.StatusOK)
-
-// 	response := entities.Response{
-// 		Status:  "success",
-// 		Message: entities.AccountDelete,
-// 	}
-
-// 	w.Header().Set("Content-Type", "application/json")
-// 	if err := json.NewEncoder(w).Encode(response); err != nil {
-// 		http.Error(w, err.Error(), http.StatusInternalServerError)
-// 	}
-// }
-
 func (app *App) handleCreateIntegration(w http.ResponseWriter, r *http.Request) {
 	var integration entities.AccountIntegration
 
@@ -171,9 +107,6 @@ func (app *App) handleCreateIntegration(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
-	// lastIntegrationID++
-	// integration.ID = lastIntegrationID
 
 	err := app.integrationService.CreateIntegration(integration)
 	if err != nil {
@@ -274,9 +207,7 @@ func (app *App) Routes() http.Handler {
 	mux.HandleFunc("/integrations", app.handleIntegrations)
 	mux.HandleFunc("/createAccount", app.handleCreateAccount)
 	mux.HandleFunc("/createIntegration", app.handleCreateIntegration)
-	// mux.HandleFunc("/deleteAccount", app.handleDeleteAccount)
 	mux.HandleFunc("/deleteIntegration", app.handleDeleteIntegration)
-	// mux.HandleFunc("/updateAccount", app.handleUpdateAccount)
 	mux.HandleFunc("/updateIntegration", app.handleUpdateIntegration)
 	mux.HandleFunc("/auth", app.handleAuthorization)
 	mux.HandleFunc("/getContacts", app.handleGetContacts)
