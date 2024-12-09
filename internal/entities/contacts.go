@@ -1,13 +1,16 @@
 package entities
 
 type Contacts struct {
-	Name  string `json:"name"`
-	Email string `json:"email"`
+	ID        int64  `json:"id" gorm:"primaryKey;autoIncrement"`
+	AccountID int64  `gorm:"index"` 
+	Name      string `json:"name"`
+	Email     string `json:"email"`
 }
 
 type ContactAPIResponse struct {
 	Embedded struct {
 		Contacts []struct {
+			ID int64 `json:"id"`
 			Name               string `json:"name"`
 			CustomFieldsValues []struct {
 				FieldName string `json:"field_name"`

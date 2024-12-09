@@ -3,10 +3,11 @@ package service
 import "http-server/internal/entities"
 
 type AccountService interface {
-	CreateAccount(account entities.Account) error
+	CreateAccount(account *entities.Account) error
 	GetAllAccounts() ([]entities.Account, error)
 	Authorization(request entities.AuthRequest) (entities.Account, error)
-	GetAllContacts() ([]entities.Contacts, error)
+	DeleteAccount(id int64) error
+	GetAccountByID(id int64) (entities.Account, error)
 }
 
 type AccountIntegrationService interface {
@@ -14,4 +15,11 @@ type AccountIntegrationService interface {
 	GetAllIntegrations() ([]entities.AccountIntegration, error)
 	UpdateIntegration(id int64, integration entities.AccountIntegration) error
 	DeleteIntegration(id int64) error
+}
+
+type ContactsService interface {
+	GetContactsByAccountID(accountID int64) ([]entities.Contacts, error)
+	GetAndSaveContactsByAccountID(accountID int64) ([]entities.Contacts, error)
+	GetAllContacts() ([]entities.Contacts, error)
+	DeleteContact(id int64) error
 }

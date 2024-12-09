@@ -3,10 +3,12 @@ package entities
 const GrantType = "authorization_code"
 
 type Account struct {
-	ID           int64  `json:"id"`
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
-	Expires      int64  `json:"expires"`
+	ID           int64                `json:"id" gorm:"primaryKey;autoIncrement"`
+	AccessToken  string               `json:"access_token"`
+	RefreshToken string               `json:"refresh_token"`
+	Expires      int64                `json:"expires"`
+	Integrations []AccountIntegration `gorm:"foreignKey:AccountID"`
+	Contacts     []Contacts           `gorm:"foreignKey:AccountID"`
 }
 
 type AuthRequest struct {

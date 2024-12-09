@@ -10,12 +10,9 @@ RUN go mod tidy
 
 COPY . ./
 
-RUN GOOS=linux GOARCH=amd64 go build -o main ./cmd/app
+RUN GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o main ./cmd/app
 
 FROM alpine:latest
-
-# Устанавливаем mysql-client и необходимые зависимости
-RUN apk --no-cache add mysql-client libc6-compat
 
 WORKDIR /root/
 
@@ -30,5 +27,4 @@ RUN chmod +x /root/main
 
 EXPOSE 8080
 
-# Запускаем бинарник
 CMD ["/root/main"]

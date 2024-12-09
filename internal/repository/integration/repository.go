@@ -3,98 +3,73 @@ package integration
 import (
 	"errors"
 	"http-server/internal/entities"
+	"http-server/internal/infrastructure/database/sql"
 	rep "http-server/internal/repository"
-	repoModel "http-server/internal/repository/integration/model"
-	"strconv"
-	"sync"
+
+	"gorm.io/gorm"
 )
 
 var _ rep.AccountIntegrationRepository = (*repository)(nil)
 
 type repository struct {
-	data map[string]*repoModel.AccountIntegration
-	mu   sync.RWMutex
+	DB *gorm.DB
 }
 
 func NewRepository() *repository {
+	db, err := sql.InitDB()
+	if err != nil {
+		return nil
+	}
 	return &repository{
-		data: make(map[string]*repoModel.AccountIntegration),
+		DB: db,
 	}
 }
 
 func (repo *repository) CreateIntegration(integration entities.AccountIntegration) error {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-
-	integrationID := strconv.FormatInt(integration.ID, 10)
-
-	if _, exists := repo.data[integrationID]; exists {
-		return nil
-	}
-
-	repo.data[integrationID] = &repoModel.AccountIntegration{
-		ID:                 integration.ID,
-		AccountID:          integration.AccountID,
-		SecretKey:          integration.SecretKey,
-		ClientID:           integration.ClientID,
-		RedirectURL:        integration.RedirectURL,
-		AuthenticationCode: integration.AuthenticationCode,
-		AuthorizationCode:  integration.AuthorizationCode,
-	}
-
-	return nil
+	return repo.DB.Create(&integration).Error
 }
 
 func (repo *repository) GetAllIntegrations() ([]entities.AccountIntegration, error) {
-	repo.mu.RLock()
-	defer repo.mu.RUnlock()
-
-	if len(repo.data) == 0 {
-		return nil, errors.New(entities.ErrNotFoundInt)
-	}
-
 	var integrations []entities.AccountIntegration
 
-	for _, integration := range repo.data {
-		integrations = append(integrations, entities.AccountIntegration(*integration))
+	if err := repo.DB.Find(&integrations).Error; err != nil {
+		return nil, err
+	}
+
+	if len(integrations) == 0 {
+		return nil, errors.New(entities.ErrNotFoundInt)
 	}
 
 	return integrations, nil
 }
 
 func (repo *repository) UpdateIntegration(id int64, integration entities.AccountIntegration) error {
-	repo.mu.Lock()
-	repo.mu.Unlock()
-
-	integrationID := strconv.FormatInt(integration.ID, 10)
-	if _, exists := repo.data[integrationID]; !exists {
-		return errors.New(entities.ErrCreateInt)
+	var integrations entities.AccountIntegration
+	if err := repo.DB.First(&integrations, id).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return errors.New(entities.ErrNotFoundInt)
+		}
+		return err
 	}
 
-	repo.data[integrationID] = &repoModel.AccountIntegration{
-		ID:                 integration.ID,
-		AccountID:          integration.AccountID,
-		SecretKey:          integration.SecretKey,
-		ClientID:           integration.ClientID,
-		RedirectURL:        integration.RedirectURL,
-		AuthenticationCode: integration.AuthenticationCode,
-		AuthorizationCode:  integration.AuthorizationCode,
+	if err := repo.DB.Model(&integrations).Updates(integration).Error; err != nil {
+		return err
 	}
-
 	return nil
 }
 
 func (repo *repository) DeleteIntegration(id int64) error {
-	repo.mu.Lock()
-	repo.mu.Unlock()
+	var integration entities.AccountIntegration
 
-	integrationID := strconv.FormatInt(id, 10)
-
-	if _, exists := repo.data[integrationID]; !exists {
-		return errors.New(entities.ErrFailedDeleteI)
+	if err := repo.DB.First(&integration, id).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return errors.New(entities.ErrNotFoundInt)
+		}
+		return err
 	}
 
-	delete(repo.data, integrationID)
-
+	if err := repo.DB.Delete(&integration).Error; err != nil {
+		return err
+	}
 	return nil
 }

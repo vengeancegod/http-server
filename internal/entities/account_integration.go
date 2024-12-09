@@ -1,8 +1,8 @@
 package entities
 
 type AccountIntegration struct {
-	ID                 int64  `json:"id"`
-	AccountID          int64  `json:"account_id"`
+	ID                 int64  `json:"id" gorm:"primaryKey;autoIncrement"`
+	AccountID          int64  `gorm:"index"`
 	SecretKey          string `json:"secret_key"`
 	ClientID           string `json:"client_id"`
 	RedirectURL        string `json:"redirect_url"`

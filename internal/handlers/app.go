@@ -11,25 +11,11 @@ import (
 type App struct {
 	accountService     service.AccountService
 	integrationService service.AccountIntegrationService
+	contactsService    service.ContactsService
 }
 
-func NewApp(accountService service.AccountService, integrationService service.AccountIntegrationService) *App {
-	return &App{accountService: accountService, integrationService: integrationService}
-}
-
-var lastAccountID int64
-var lastIntegrationID int64
-
-func (app *App) handleGetContacts(w http.ResponseWriter, _ *http.Request) {
-	contacts, err := app.accountService.GetAllContacts()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(contacts); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+func NewApp(accountService service.AccountService, integrationService service.AccountIntegrationService, contactsService service.ContactsService) *App {
+	return &App{accountService: accountService, integrationService: integrationService, contactsService: contactsService}
 }
 
 func (app *App) handleAuthorization(w http.ResponseWriter, r *http.Request) {
@@ -40,13 +26,9 @@ func (app *App) handleAuthorization(w http.ResponseWriter, r *http.Request) {
 	}
 
 	authResponse, err := app.accountService.Authorization(authRequest)
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
-	}
-
-	if err := app.accountService.CreateAccount(authResponse); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -64,10 +46,7 @@ func (app *App) handleCreateAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lastAccountID++
-	account.ID = lastAccountID
-
-	err := app.accountService.CreateAccount(account)
+	err := app.accountService.CreateAccount(&account)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -201,6 +180,127 @@ func (app *App) handleDeleteIntegration(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
+func (app *App) handleDeleteAccount(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Query().Get("id")
+
+	accountID, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = app.accountService.DeleteAccount(accountID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response := entities.Response{
+		Status:  "success",
+		Message: entities.AccountDelete,
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (app *App) handleAccountByID(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Query().Get("id")
+
+	accountID, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	account, err := app.accountService.GetAccountByID(accountID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(account)
+}
+
+func (app *App) handleGetContactByAccountID(w http.ResponseWriter, r *http.Request) {
+	account_id := r.URL.Query().Get("account_id")
+
+	accountID, err := strconv.ParseInt(account_id, 10, 64)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	contacts, err := app.contactsService.GetContactsByAccountID(accountID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(contacts)
+}
+
+func (app *App) handleGetAndSaveContactsByAccountID(w http.ResponseWriter, r *http.Request) {
+	account_id := r.URL.Query().Get("account_id")
+
+	accountID, err := strconv.ParseInt(account_id, 10, 64)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	contacts, err := app.contactsService.GetAndSaveContactsByAccountID(int64(accountID))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(contacts)
+}
+
+func (app *App) handleGetAllContacts(w http.ResponseWriter, r *http.Request) {
+	contacts, err := app.contactsService.GetAllContacts()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(contacts); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (app *App) handleDeleteContact(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Query().Get("id")
+	contactID, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = app.contactsService.DeleteContact(contactID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response := entities.Response{
+		Status:  "success",
+		Message: "Contact deleted successfully",
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
 func (app *App) Routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", app.handleAccounts)
@@ -210,6 +310,11 @@ func (app *App) Routes() http.Handler {
 	mux.HandleFunc("/deleteIntegration", app.handleDeleteIntegration)
 	mux.HandleFunc("/updateIntegration", app.handleUpdateIntegration)
 	mux.HandleFunc("/auth", app.handleAuthorization)
-	mux.HandleFunc("/getContacts", app.handleGetContacts)
+	mux.HandleFunc("/deleteAccount", app.handleDeleteAccount)
+	mux.HandleFunc("/getAccountByID", app.handleAccountByID)
+	mux.HandleFunc("/getContactsByAccountID", app.handleGetContactByAccountID)
+	mux.HandleFunc("/getContactsFromAPI", app.handleGetAndSaveContactsByAccountID)
+	mux.HandleFunc("/getContacts", app.handleGetAllContacts)
+	mux.HandleFunc("/deleteContact", app.handleDeleteContact)
 	return mux
 }
