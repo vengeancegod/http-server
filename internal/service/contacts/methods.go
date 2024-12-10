@@ -3,13 +3,63 @@ package contacts
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"http-server/internal/entities"
 	"io"
 	"log"
 	"net/http"
+	"net/url"
+	"strings"
 )
 
 const contactsURL = "https://volkovkirill.amocrm.ru/api/v4/contacts"
+const unisenderURL = "https://api.unisender.com/ru/api/importContacts"
+
+func (s *Service) SendToUnisender(contacts []entities.Contacts) error {
+
+	unisenderKeys, err := s.unisenderRepository.GetUnisenderKey()
+	if err != nil {
+		return errors.New(entities.ErrGetUnisenderKey)
+	}
+	unisenderKey := unisenderKeys[0].UnisenderKey
+
+	fields := []string{"email", "Name"}
+	params := url.Values{}
+	params.Add("format", "json")
+	params.Add("api_key", unisenderKey)
+
+	for i, field := range fields {
+		params.Add(fmt.Sprintf("field_names[%d]", i), field)
+	}
+
+	for i, contact := range contacts {
+		params.Add(fmt.Sprintf("data[%d][0]", i), contact.Email)
+		params.Add(fmt.Sprintf("data[%d][1]", i), contact.Name)
+	}
+	log.Printf("Request to Unisender: %s?%s", unisenderURL, params.Encode())
+	resp, err := http.Post(unisenderURL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return errors.New(entities.ErrReadBody)
+		}
+		log.Printf("Unisender response body: %s", string(body))
+		return nil
+	}
+
+	responseBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return errors.New(entities.ErrReadBody)
+	}
+
+	log.Printf("Unisender response: %s", string(responseBody))
+	return nil
+}
 
 func (s *Service) GetContactsByAccountID(accountID int64) ([]entities.Contacts, error) {
 	contacts, err := s.contactsRepository.GetContactsByAccountID(accountID)

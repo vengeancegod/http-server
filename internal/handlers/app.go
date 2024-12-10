@@ -12,10 +12,12 @@ type App struct {
 	accountService     service.AccountService
 	integrationService service.AccountIntegrationService
 	contactsService    service.ContactsService
+	unisenderService   service.UnisenderIntegrationService
 }
 
-func NewApp(accountService service.AccountService, integrationService service.AccountIntegrationService, contactsService service.ContactsService) *App {
-	return &App{accountService: accountService, integrationService: integrationService, contactsService: contactsService}
+func NewApp(accountService service.AccountService, integrationService service.AccountIntegrationService, contactsService service.ContactsService,
+	unisenderService service.UnisenderIntegrationService) *App {
+	return &App{accountService: accountService, integrationService: integrationService, contactsService: contactsService, unisenderService: unisenderService}
 }
 
 func (app *App) handleAuthorization(w http.ResponseWriter, r *http.Request) {
@@ -291,13 +293,71 @@ func (app *App) handleDeleteContact(w http.ResponseWriter, r *http.Request) {
 
 	response := entities.Response{
 		Status:  "success",
-		Message: "Contact deleted successfully",
+		Message: entities.AccountDelete,
 	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (app *App) handleGetUnisenderKey(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		unisenderKey, err := app.unisenderService.GetUnisenderKey()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		if err := json.NewEncoder(w).Encode(unisenderKey); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	if r.Method == http.MethodPost {
+		err := r.ParseForm()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		unisenderKey := r.FormValue("unisender_key")
+		accountIDString := r.FormValue("account_id")
+		accountID, err := strconv.ParseInt(accountIDString, 10, 64)
+
+		unisenderIntegration := &entities.UnisenderIntegration{
+			UnisenderKey: unisenderKey,
+			AccountID:    accountID,
+		}
+
+		err = app.unisenderService.SaveUnisenderKey(unisenderIntegration)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		contacts, err := app.contactsService.GetAllContacts()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		err = app.contactsService.SendToUnisender(contacts)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		if err := json.NewEncoder(w).Encode(unisenderIntegration); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 	}
 }
 
@@ -316,5 +376,6 @@ func (app *App) Routes() http.Handler {
 	mux.HandleFunc("/getContactsFromAPI", app.handleGetAndSaveContactsByAccountID)
 	mux.HandleFunc("/getContacts", app.handleGetAllContacts)
 	mux.HandleFunc("/deleteContact", app.handleDeleteContact)
+	mux.HandleFunc("/getUnisenderKey", app.handleGetUnisenderKey)
 	return mux
 }

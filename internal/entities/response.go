@@ -9,6 +9,7 @@ const (
 	IntegrationUpdate     = "Integration update successfully"
 	IntegrationDelete     = "Integrations delete successfully"
 	IncorrectType         = "Incorrect type of iD"
+	UnisenderKeyAdd       = "UnisenderKEY saved successfully"
 )
 
 type Response struct {

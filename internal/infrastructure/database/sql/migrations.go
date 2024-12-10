@@ -11,5 +11,6 @@ func CreateMigration(db *gorm.DB) error {
 		&entities.Account{},
 		&entities.AccountIntegration{},
 		&entities.Contacts{},
+		&entities.UnisenderIntegration{},
 	)
 }

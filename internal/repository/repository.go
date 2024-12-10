@@ -23,3 +23,8 @@ type ContactsRepository interface {
 	CreateContacts(contacts []entities.Contacts) error
 	DeleteContact(id int64) error
 }
+
+type UnisenderIntegrationRepository interface {
+	GetUnisenderKey() ([]entities.UnisenderIntegration, error)
+	SaveUnisenderKey(unisenderKey *entities.UnisenderIntegration) error
+}

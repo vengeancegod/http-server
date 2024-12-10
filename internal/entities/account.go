@@ -9,6 +9,7 @@ type Account struct {
 	Expires      int64                `json:"expires"`
 	Integrations []AccountIntegration `gorm:"foreignKey:AccountID"`
 	Contacts     []Contacts           `gorm:"foreignKey:AccountID"`
+	UnisenderKey string               `gorm:"foreignKey:AccountID"`
 }
 
 type AuthRequest struct {

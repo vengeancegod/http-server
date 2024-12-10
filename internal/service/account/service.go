@@ -13,4 +13,3 @@ func NewService(accountRepository repository.AccountRepository) *Service {
 		accountRepository: accountRepository,
 	}
 }
-

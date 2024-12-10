@@ -6,11 +6,12 @@ import (
 	"http-server/internal/infrastructure/database/sql"
 	"http-server/internal/repository/account"
 	"http-server/internal/repository/contacts"
-
 	"http-server/internal/repository/integration"
+	"http-server/internal/repository/unisender_integration"
 	aService "http-server/internal/service/account"
 	cService "http-server/internal/service/contacts"
 	iService "http-server/internal/service/integration"
+	uiService "http-server/internal/service/unisender_integration"
 	"log"
 	"net/http"
 )
@@ -29,10 +30,15 @@ func main() {
 	if err != nil {
 		errors.New("Error create repository")
 	}
-	contactsService := cService.NewService(contactsRepo, accountRepo)
+	unisenderRepo, err := unisender_integration.NewRepository()
+	if err != nil {
+		errors.New("Errors create repository")
+	}
+	unisenderService := uiService.NewService(unisenderRepo)
+	contactsService := cService.NewService(contactsRepo, accountRepo, unisenderRepo)
 	accountService := aService.NewService(accountRepo)
 	integrationService := iService.NewService(integrationRepo)
-	app := handlers.NewApp(accountService, integrationService, contactsService)
+	app := handlers.NewApp(accountService, integrationService, contactsService, unisenderService)
 	db := accountRepo.DB
 	err = sql.CreateMigration(db)
 	if err != nil {

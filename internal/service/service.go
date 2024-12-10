@@ -22,4 +22,10 @@ type ContactsService interface {
 	GetAndSaveContactsByAccountID(accountID int64) ([]entities.Contacts, error)
 	GetAllContacts() ([]entities.Contacts, error)
 	DeleteContact(id int64) error
+	SendToUnisender(contacts []entities.Contacts) error
+}
+
+type UnisenderIntegrationService interface {
+	GetUnisenderKey() ([]entities.UnisenderIntegration, error)
+	SaveUnisenderKey(unisenderKey *entities.UnisenderIntegration) error
 }
