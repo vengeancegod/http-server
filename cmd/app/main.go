@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	unsubService "http-server/internal/api/unsubscribe"
 	"http-server/internal/handlers"
 	"http-server/internal/infrastructure/database/sql"
 	"http-server/internal/repository/account"
@@ -12,8 +13,12 @@ import (
 	cService "http-server/internal/service/contacts"
 	iService "http-server/internal/service/integration"
 	uiService "http-server/internal/service/unisender_integration"
+	desc "http-server/pkg/unsubscribe"
 	"log"
+	"net"
 	"net/http"
+
+	"google.golang.org/grpc"
 )
 
 func main() {
@@ -45,14 +50,34 @@ func main() {
 		errors.New("Error create migration")
 	}
 
-	server := http.Server{
+	httpServer := http.Server{
 		Addr:    ":8080",
 		Handler: app.Routes(),
 	}
 
-	log.Println(("Listen on :8080"))
-	server.ListenAndServe()
-	if err := server.ListenAndServe(); err != nil {
+	go func() {
+		log.Println(("Listen on :8080"))
+		if err := httpServer.ListenAndServe(); err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	grpcServer := grpc.NewServer()
+
+	unsubscribeService := unsubService.NewImplementation(accountService)
+	desc.RegisterUnsubscribeServer(grpcServer, unsubscribeService)
+
+	listener, err := net.Listen("tcp", ":8081")
+	if err != nil {
 		log.Fatal(err)
 	}
+
+	go func() {
+		log.Println(("Listen on :8081"))
+		if err := grpcServer.Serve(listener); err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	select {}
 }

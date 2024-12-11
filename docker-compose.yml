@@ -5,6 +5,7 @@ services:
     container_name: go_app
     ports:
       - "8080:8080"
+      - "8081:8081"
     environment:
       - MYSQL_HOST=db
       - MYSQL_PORT=3306
@@ -15,6 +16,7 @@ services:
       - db
     networks:
       - app-network
+    restart: always  
 
   db:
     image: mysql:latest

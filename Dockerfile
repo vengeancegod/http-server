@@ -25,6 +25,6 @@ RUN ls -l /root/
 # Делаем бинарник исполнимым
 RUN chmod +x /root/main
 
-EXPOSE 8080
+EXPOSE 8080 8081
 
 CMD ["/root/main"]
