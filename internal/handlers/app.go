@@ -3,7 +3,9 @@ package handlers
 import (
 	"encoding/json"
 	"http-server/internal/entities"
+	"http-server/internal/infrastructure/beanstalk"
 	"http-server/internal/service"
+	"log"
 	"net/http"
 	"strconv"
 )
@@ -13,11 +15,13 @@ type App struct {
 	integrationService service.AccountIntegrationService
 	contactsService    service.ContactsService
 	unisenderService   service.UnisenderIntegrationService
+	beanstalkService   beanstalk.BeanstalkService
 }
 
 func NewApp(accountService service.AccountService, integrationService service.AccountIntegrationService, contactsService service.ContactsService,
-	unisenderService service.UnisenderIntegrationService) *App {
-	return &App{accountService: accountService, integrationService: integrationService, contactsService: contactsService, unisenderService: unisenderService}
+	unisenderService service.UnisenderIntegrationService, beanstalkService beanstalk.BeanstalkService) *App {
+	return &App{accountService: accountService, integrationService: integrationService, contactsService: contactsService, unisenderService: unisenderService,
+		beanstalkService: beanstalkService}
 }
 
 func (app *App) handleAuthorization(w http.ResponseWriter, r *http.Request) {
@@ -338,6 +342,24 @@ func (app *App) handleGetUnisenderKey(w http.ResponseWriter, r *http.Request) {
 		err = app.unisenderService.SaveUnisenderKey(unisenderIntegration)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		task := entities.SynchronizationTask{
+			UnisenderKey: unisenderKey,
+			AccountID:    accountID,
+		}
+
+		taskData, err := json.Marshal(task)
+		if err != nil {
+			log.Printf("Error marshalling task: %v", err)
+			http.Error(w, entities.ErrMarshalTask, http.StatusInternalServerError)
+			return
+		}
+
+		err = app.beanstalkService.PutTask(taskData)
+		if err != nil {
+			http.Error(w, entities.ErrPutTask, http.StatusInternalServerError)
 			return
 		}
 

@@ -3,6 +3,7 @@ module http-server
 go 1.23.1
 
 require (
+	github.com/beanstalkd/go-beanstalk v0.2.0
 	github.com/go-sql-driver/mysql v1.8.1
 	google.golang.org/grpc v1.68.0
 	google.golang.org/protobuf v1.35.2

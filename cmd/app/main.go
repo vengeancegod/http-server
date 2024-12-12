@@ -4,6 +4,7 @@ import (
 	"errors"
 	unsubService "http-server/internal/api/unsubscribe"
 	"http-server/internal/handlers"
+	bService "http-server/internal/infrastructure/beanstalk"
 	"http-server/internal/infrastructure/database/sql"
 	"http-server/internal/repository/account"
 	"http-server/internal/repository/contacts"
@@ -39,11 +40,16 @@ func main() {
 	if err != nil {
 		errors.New("Errors create repository")
 	}
+
 	unisenderService := uiService.NewService(unisenderRepo)
 	contactsService := cService.NewService(contactsRepo, accountRepo, unisenderRepo)
 	accountService := aService.NewService(accountRepo)
 	integrationService := iService.NewService(integrationRepo)
-	app := handlers.NewApp(accountService, integrationService, contactsService, unisenderService)
+	beanstalkService, err := bService.NewService()
+	if err != nil {
+		log.Fatal("Error initializing Beanstalk service: ", err)
+	}
+	app := handlers.NewApp(accountService, integrationService, contactsService, unisenderService, beanstalkService)
 	db := accountRepo.DB
 	err = sql.CreateMigration(db)
 	if err != nil {
