@@ -14,6 +14,8 @@ type Service struct {
 
 type BeanstalkService interface {
 	PutTask(task []byte) error
+	GetTask() (uint64, []byte, error)
+	DeleteTask(taskID uint64) error
 }
 
 func NewService() (*Service, error) {
@@ -21,7 +23,7 @@ func NewService() (*Service, error) {
 	if err != nil {
 		return nil, errors.New(entities.ErrConnectBeanstalk)
 	}
-	log.Println("Successfully connected to beanstalk")
+	log.Println("Successfull connected to beanstalk")
 	return &Service{
 		conn: conn,
 	}, nil

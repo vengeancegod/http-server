@@ -23,7 +23,12 @@ import (
 )
 
 func main() {
-	accountRepo, err := account.NewRepository()
+	db, err := sql.InitDB()
+	if err != nil {
+		log.Fatal("Failed to initialize database:", err)
+	}
+
+	accountRepo, err := account.NewRepository(db)
 	if err != nil {
 		errors.New("Error create repository")
 	}
@@ -32,11 +37,11 @@ func main() {
 	if err != nil {
 		errors.New("Error create repository")
 	}
-	contactsRepo, err := contacts.NewRepository()
+	contactsRepo, err := contacts.NewRepository(db)
 	if err != nil {
 		errors.New("Error create repository")
 	}
-	unisenderRepo, err := unisender_integration.NewRepository()
+	unisenderRepo, err := unisender_integration.NewRepository(db)
 	if err != nil {
 		errors.New("Errors create repository")
 	}
@@ -50,7 +55,7 @@ func main() {
 		log.Fatal("Error initializing beanstalk service: ", err)
 	}
 	app := handlers.NewApp(accountService, integrationService, contactsService, unisenderService, beanstalkService)
-	db := accountRepo.DB
+
 	err = sql.CreateMigration(db)
 	if err != nil {
 		errors.New("Error create migration")

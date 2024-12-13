@@ -6,6 +6,7 @@ const (
 	ErrPutTask          = "Failed put task to queue"
 	ErrReserveTask      = "Failed reserve task"
 	ErrUnmarshalTask    = "Failed unmarashaling task"
+	ErrAction           = "Unknown action"
 )
 
 type SynchronizationTask struct {

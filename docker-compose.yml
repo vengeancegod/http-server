@@ -12,11 +12,31 @@ services:
       - MYSQL_USER=root
       - MYSQL_PASSWORD=root
       - MYSQL_DB=mydb
+      - WORKER_COUNT=5
     depends_on:
       - db
     networks:
       - app-network
     restart: always  
+    command: ["/root/app"]  
+
+  workers:
+    build: .
+    container_name: go_workers
+    environment:
+      - MYSQL_HOST=db
+      - MYSQL_PORT=3306
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=root
+      - MYSQL_DB=mydb
+      - WORKER_COUNT=5  
+    depends_on:
+      - db
+      - beanstalkd
+    networks:
+      - app-network
+    restart: always  
+    command: ["/root/workers", "5"]  
 
   db:
     image: mysql:latest
@@ -36,7 +56,7 @@ services:
     image: schickling/beanstalkd
     restart: "no"
     expose:
-      - 11300 # beanstalkd доступен через этот порт внутри контейнера (порт по умолчанию для beanstalkd)
+      - 11300 
     ports:
       - 11300:11300
     labels:
@@ -44,8 +64,7 @@ services:
     volumes:
       - ".:/mnt/ddev_config"
     networks:
-    - app-network
-
+      - app-network
 
 volumes:
   mysql-data:

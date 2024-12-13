@@ -2,7 +2,6 @@ package unisender_integration
 
 import (
 	"http-server/internal/entities"
-	"http-server/internal/infrastructure/database/sql"
 	rep "http-server/internal/repository"
 
 	"gorm.io/gorm"
@@ -14,12 +13,7 @@ type repository struct {
 	DB *gorm.DB
 }
 
-func NewRepository() (*repository, error) {
-	db, err := sql.InitDB()
-	if err != nil {
-		return nil, err
-	}
-
+func NewRepository(db *gorm.DB) (*repository, error) {
 	return &repository{
 		DB: db,
 	}, nil
