@@ -13,3 +13,10 @@ type SynchronizationTask struct {
 	AccountID    int64  `json:"account_id"`
 }
 
+type ContactsTask struct {
+	Action    string `json:"action"`
+	ContactID int64  `json:"contact_id"`
+	Name      string `json:"name,omitempty"`
+	Email     string `json:"email,omitempty"`
+	AccountID int64  `json:"account_id,omitempty"`
+}

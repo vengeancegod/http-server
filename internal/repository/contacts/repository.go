@@ -58,7 +58,7 @@ func (repo *repository) GetContactsByAccountID(account_id int64) ([]entities.Con
 	return contacts, nil
 }
 
-func (repo *repository) DeleteContact(id int64) error{
+func (repo *repository) DeleteContact(id int64) error {
 
 	var contact entities.Contacts
 
@@ -68,9 +68,33 @@ func (repo *repository) DeleteContact(id int64) error{
 		}
 		return err
 	}
-	
+
 	if err := repo.DB.Delete(&contact).Error; err != nil {
 		return err
 	}
 	return nil
+}
+
+func (repo *repository) UpdateContact(contact entities.Contacts) error {
+	if err := repo.DB.Model(&entities.Contacts{}).Where("id = ?", contact.ID).Updates(contact).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func (repo *repository) CreateContact(contact entities.Contacts) error {
+	log.Printf("Save contact: %+v", contact)
+	if err := repo.DB.Create(&contact).Error; err != nil {
+		log.Printf("Error saving contact: %v", err)
+		return err
+	}
+	return nil
+}
+
+func (repo *repository) GetContactByID(id int64) (entities.Contacts, error) {
+	var contact entities.Contacts
+	if err := repo.DB.First(&contact, id).Error; err != nil {
+		return entities.Contacts{}, err
+	}
+	return contact, nil
 }

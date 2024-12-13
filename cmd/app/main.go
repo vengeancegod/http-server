@@ -47,7 +47,7 @@ func main() {
 	integrationService := iService.NewService(integrationRepo)
 	beanstalkService, err := bService.NewService()
 	if err != nil {
-		log.Fatal("Error initializing Beanstalk service: ", err)
+		log.Fatal("Error initializing beanstalk service: ", err)
 	}
 	app := handlers.NewApp(accountService, integrationService, contactsService, unisenderService, beanstalkService)
 	db := accountRepo.DB

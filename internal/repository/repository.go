@@ -22,6 +22,9 @@ type ContactsRepository interface {
 	GetContactsByAccountID(account_id int64) ([]entities.Contacts, error)
 	CreateContacts(contacts []entities.Contacts) error
 	DeleteContact(id int64) error
+	UpdateContact(contact entities.Contacts) error
+	CreateContact(contact entities.Contacts) error
+	GetContactByID(id int64) (entities.Contacts, error)
 }
 
 type UnisenderIntegrationRepository interface {

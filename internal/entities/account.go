@@ -3,7 +3,7 @@ package entities
 const GrantType = "authorization_code"
 
 type Account struct {
-	ID           int64                `json:"id" gorm:"primaryKey;autoIncrement"`
+	ID           int64                `json:"id" gorm:"primaryKey"`
 	AccessToken  string               `json:"access_token"`
 	RefreshToken string               `json:"refresh_token"`
 	Expires      int64                `json:"expires"`

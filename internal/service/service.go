@@ -23,6 +23,10 @@ type ContactsService interface {
 	GetAllContacts() ([]entities.Contacts, error)
 	DeleteContact(id int64) error
 	SendToUnisender(contacts []entities.Contacts) error
+	UpdateContact(contact entities.Contacts) error
+	CreateContact(contact entities.Contacts) error
+	CreateContacts(contacts []entities.Contacts) error
+	GetContactByID(id int64) (entities.Contacts, error)
 }
 
 type UnisenderIntegrationService interface {

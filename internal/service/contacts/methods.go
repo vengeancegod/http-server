@@ -158,6 +158,29 @@ func (s *Service) DeleteContact(id int64) error {
 	if err != nil {
 		return err
 	}
-
 	return nil
+}
+
+func (s *Service) UpdateContact(contact entities.Contacts) error {
+	err := s.contactsRepository.UpdateContact(contact)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Service) CreateContact(contact entities.Contacts) error {
+	return s.contactsRepository.CreateContact(contact)
+}
+
+func (s *Service) CreateContacts(contacts []entities.Contacts) error {
+	return s.contactsRepository.CreateContacts(contacts)
+}
+
+func (s *Service) GetContactByID(id int64) (entities.Contacts, error) {
+	contact, err := s.contactsRepository.GetContactByID(id)
+	if err != nil {
+		return entities.Contacts{}, err
+	}
+	return contact, nil
 }

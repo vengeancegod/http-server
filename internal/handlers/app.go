@@ -352,7 +352,6 @@ func (app *App) handleGetUnisenderKey(w http.ResponseWriter, r *http.Request) {
 
 		taskData, err := json.Marshal(task)
 		if err != nil {
-			log.Printf("Error marshalling task: %v", err)
 			http.Error(w, entities.ErrMarshalTask, http.StatusInternalServerError)
 			return
 		}
@@ -383,6 +382,149 @@ func (app *App) handleGetUnisenderKey(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (app *App) handleContactsHook(w http.ResponseWriter, r *http.Request) {
+	var task *entities.ContactsTask
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	deleteContacts, ok := r.Form["contacts[delete][0][id]"]
+	if ok && len(deleteContacts) > 0 {
+		contactIDStr := deleteContacts[0]
+		log.Printf("Delete contact with ID: %s", contactIDStr)
+
+		contactID, err := strconv.ParseInt(contactIDStr, 10, 64)
+		if err != nil {
+			http.Error(w, "Incorrect contactID", http.StatusBadRequest)
+			return
+		}
+
+		task = &entities.ContactsTask{
+			Action:    "delete",
+			ContactID: contactID,
+		}
+
+		taskData, err := json.Marshal(task)
+		if err != nil {
+			http.Error(w, entities.ErrMarshalTask, http.StatusInternalServerError)
+			return
+		}
+
+		if err := app.beanstalkService.PutTask(taskData); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// if err := app.contactsService.DeleteContact(contactID); err != nil {
+		// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+		// 	return
+		// }
+
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	addContact, ok := r.Form["contacts[add][0][id]"]
+	if ok && len(addContact) > 0 {
+		contactData := make(map[string]string)
+		contactData["id"] = addContact[0]
+		contactData["name"] = r.Form.Get("contacts[add][0][name]")
+		contactData["email"] = r.Form.Get("contacts[add][0][custom_fields][0][values][0][value]")
+
+		accountIDStr := r.Form.Get("contacts[add][0][account_id]")
+		if accountIDStr == "" {
+			accountIDStr = r.Form.Get("account[id]")
+		}
+
+		accountID, err := strconv.ParseInt(accountIDStr, 10, 64)
+		if err != nil {
+			http.Error(w, "Invalid account ID", http.StatusBadRequest)
+			return
+		}
+
+		var contact entities.Contacts
+		contact.ID, _ = strconv.ParseInt(contactData["id"], 10, 64)
+		contact.Name = contactData["name"]
+		contact.Email = contactData["email"]
+		contact.AccountID = accountID
+
+		task = &entities.ContactsTask{
+			Action:    "add",
+			ContactID: contact.ID,
+			Name:      contact.Name,
+			Email:     contact.Email,
+			AccountID: accountID,
+		}
+
+		taskData, err := json.Marshal(task)
+		if err != nil {
+			http.Error(w, entities.ErrMarshalTask, http.StatusInternalServerError)
+			return
+		}
+
+		if err := app.beanstalkService.PutTask(taskData); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// if err := app.contactsService.CreateContact(contact); err != nil {
+		// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+		// 	return
+		// }
+		log.Printf("Contact with ID %d сreated", contact.ID)
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	updateContacts, ok := r.Form["contacts[update][0][id]"]
+	if ok && len(updateContacts) > 0 {
+		contactIDStr := updateContacts[0]
+		contactID, err := strconv.ParseInt(contactIDStr, 10, 64)
+		if err != nil {
+			http.Error(w, "Incorrect contactID", http.StatusBadRequest)
+			return
+		}
+
+		contact, err := app.contactsService.GetContactByID(contactID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		contact.Name = r.Form.Get("contacts[update][0][name]")
+		contact.Email = r.Form.Get("contacts[update][0][custom_fields][0][values][0][value]")
+
+		task = &entities.ContactsTask{
+			Action:    "update",
+			ContactID: contactID,
+			Name:      contact.Name,
+			Email:     contact.Email,
+		}
+
+		taskData, err := json.Marshal(task)
+		if err != nil {
+			http.Error(w, entities.ErrMarshalTask, http.StatusInternalServerError)
+			return
+		}
+
+		if err := app.beanstalkService.PutTask(taskData); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// if err := app.contactsService.UpdateContact(contact); err != nil {
+		// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+		// 	return
+		// }
+		log.Printf("Contact with ID %d updated", contact.ID)
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	http.Error(w, "Invalid request", http.StatusBadRequest)
+}
+
 func (app *App) Routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", app.handleAccounts)
@@ -399,5 +541,6 @@ func (app *App) Routes() http.Handler {
 	mux.HandleFunc("/getContacts", app.handleGetAllContacts)
 	mux.HandleFunc("/deleteContact", app.handleDeleteContact)
 	mux.HandleFunc("/getUnisenderKey", app.handleGetUnisenderKey)
+	mux.HandleFunc("/contactsHook", app.handleContactsHook)
 	return mux
 }
