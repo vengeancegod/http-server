@@ -417,11 +417,6 @@ func (app *App) handleContactsHook(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// if err := app.contactsService.DeleteContact(contactID); err != nil {
-		// 	http.Error(w, err.Error(), http.StatusInternalServerError)
-		// 	return
-		// }
-
 		w.WriteHeader(http.StatusOK)
 		return
 	}
@@ -469,10 +464,6 @@ func (app *App) handleContactsHook(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// if err := app.contactsService.CreateContact(contact); err != nil {
-		// 	http.Error(w, err.Error(), http.StatusInternalServerError)
-		// 	return
-		// }
 		log.Printf("Contact with ID %d сreated", contact.ID)
 		w.WriteHeader(http.StatusOK)
 		return
@@ -514,10 +505,6 @@ func (app *App) handleContactsHook(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// if err := app.contactsService.UpdateContact(contact); err != nil {
-		// 	http.Error(w, err.Error(), http.StatusInternalServerError)
-		// 	return
-		// }
 		log.Printf("Contact with ID %d updated", contact.ID)
 		w.WriteHeader(http.StatusOK)
 		return
