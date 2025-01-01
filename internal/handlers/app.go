@@ -3,59 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"http-server/internal/entities"
-<<<<<<< HEAD
-	"http-server/internal/entities/sqlite"
-	"log"
-	"net/http"
-)
-
-type App struct {
-	Accounts     *sqlite.AccountEntity
-	Integrations *sqlite.AccountIntegrationEntity
-}
-
-func (app *App) handleAccounts(w http.ResponseWriter, r *http.Request) {
-	accounts, err := app.Accounts.GetAll()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-
-	if err := json.NewEncoder(w).Encode(accounts); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-
-func (app *App) handleIntegrations(w http.ResponseWriter, r *http.Request) {
-	integrations, err := app.Integrations.GetAllIntegrations()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	log.Println("Integrations:", integrations)
-	w.Header().Set("Content-Type", "application/json")
-
-	if err := json.NewEncoder(w).Encode(integrations); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-
-func (app *App) handleCreateAccount(w http.ResponseWriter, r *http.Request) {
-	var account entities.Account
-	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(&account)
-	if err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	err = app.Accounts.CreateAccount(account.AccessToken, account.RefreshToken, account.Expires)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-=======
 	"http-server/internal/infrastructure/beanstalk"
 	"http-server/internal/service"
 	"log"
@@ -88,15 +35,11 @@ func (app *App) handleAuthorization(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
->>>>>>> feature/SCHOOL-1312
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
-<<<<<<< HEAD
-	if err := json.NewEncoder(w).Encode(map[string]string{"status": "Account created successfully"}); err != nil {
-=======
 	if err := json.NewEncoder(w).Encode(authResponse); err != nil {
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 	}
@@ -138,25 +81,12 @@ func (app *App) handleAccounts(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(account); err != nil {
->>>>>>> feature/SCHOOL-1312
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func (app *App) handleCreateIntegration(w http.ResponseWriter, r *http.Request) {
 	var integration entities.AccountIntegration
-<<<<<<< HEAD
-	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(&integration)
-	if err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	err = app.Integrations.CreateIntegration(integration.AccountId, integration.SecretKey, integration.ClientId, integration.RedirectURL, integration.AuthenticationCode, integration.AuthorizationCode)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-=======
 
 	if err := json.NewDecoder(r.Body).Decode(&integration); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -187,23 +117,16 @@ func (app *App) handleIntegrations(w http.ResponseWriter, _ *http.Request) {
 	accountIntegration, err := app.integrationService.GetAllIntegrations()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
->>>>>>> feature/SCHOOL-1312
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
-<<<<<<< HEAD
-	if err := json.NewEncoder(w).Encode(map[string]string{"status": "Integration created successfully"}); err != nil {
-=======
 	if err := json.NewEncoder(w).Encode(accountIntegration); err != nil {
->>>>>>> feature/SCHOOL-1312
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
-<<<<<<< HEAD
-=======
 func (app *App) handleUpdateIntegration(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	integrationID, err := strconv.ParseInt(id, 10, 64)
@@ -589,15 +512,12 @@ func (app *App) handleContactsHook(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Invalid request", http.StatusBadRequest)
 }
 
->>>>>>> feature/SCHOOL-1312
 func (app *App) Routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", app.handleAccounts)
 	mux.HandleFunc("/integrations", app.handleIntegrations)
 	mux.HandleFunc("/createAccount", app.handleCreateAccount)
 	mux.HandleFunc("/createIntegration", app.handleCreateIntegration)
-<<<<<<< HEAD
-=======
 	mux.HandleFunc("/deleteIntegration", app.handleDeleteIntegration)
 	mux.HandleFunc("/updateIntegration", app.handleUpdateIntegration)
 	mux.HandleFunc("/auth", app.handleAuthorization)
@@ -609,6 +529,5 @@ func (app *App) Routes() http.Handler {
 	mux.HandleFunc("/deleteContact", app.handleDeleteContact)
 	mux.HandleFunc("/getUnisenderKey", app.handleGetUnisenderKey)
 	mux.HandleFunc("/contactsHook", app.handleContactsHook)
->>>>>>> feature/SCHOOL-1312
 	return mux
 }
