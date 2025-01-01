@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package unsubscribe_v1;
+
+option go_package = "./";
+
+service Unsubscribe {
+    rpc Unsubscribe(UnsubscribeRequest) returns (UnsubscribeResponse);
+}
+
+message UnsubscribeRequest {
+    int64 id = 1;
+}
+
+message UnsubscribeResponse {
+    bool success = 1;
+    string message = 2;
+}
